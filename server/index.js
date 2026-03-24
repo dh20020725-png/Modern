@@ -20,6 +20,7 @@ const productRoutes = require("./routes/productRoutes");
 const stripeRoutes = require("./routes/stripe");
 const orderRoutes = require("./routes/order");
 const authRoutes = require("./routes/authRoutes");
+const initializeDatabase = require("./config/initializeDatabase");
 
 const app = express();
 
@@ -32,7 +33,7 @@ app.use(passport.initialize());
 
 const corsOptions = {
   origin: '*',
-  methods: ['HEAD', 'PATCH', 'GET', 'PUT'],
+  methods: ['HEAD', 'PATCH', 'GET', 'PUT', 'POST', 'DELETE'],
   optionsSuccessStatus: 204,
 };
 
@@ -105,32 +106,41 @@ app.use((err, req, res, next) => {
 // Start server
 const PORT = process.env.PORT || 4000;
 
-const server = app.listen(PORT, () => {
+// Initialize database before starting server
+(async () => {
   console.log('\n' + '='.repeat(60));
-  console.log(`  🚀 SERVER RUNNING`);
+  console.log(`  🔧 INITIALIZING`);
   console.log('='.repeat(60));
-  console.log(`  Port: ${PORT}`);
-  console.log(`  URL: http://localhost:${PORT}`);
-  console.log(`  API: http://localhost:${PORT}/api`);
-  console.log('='.repeat(60) + '\n');
-});
+  
+  await initializeDatabase();
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received, shutting down gracefully...');
-  server.close(() => {
-    console.log('Server closed');
-    process.exit(0);
+  const server = app.listen(PORT, () => {
+    console.log('\n' + '='.repeat(60));
+    console.log(`  🚀 SERVER RUNNING`);
+    console.log('='.repeat(60));
+    console.log(`  Port: ${PORT}`);
+    console.log(`  URL: http://localhost:${PORT}`);
+    console.log(`  API: http://localhost:${PORT}/api`);
+    console.log('='.repeat(60) + '\n');
   });
-});
 
-process.on('SIGINT', () => {
-  console.log('\nSIGINT received, shutting down gracefully...');
-  server.close(() => {
-    console.log('Server closed');
-    process.exit(0);
+  // Graceful shutdown
+  process.on('SIGTERM', () => {
+    console.log('SIGTERM received, shutting down gracefully...');
+    server.close(() => {
+      console.log('Server closed');
+      process.exit(0);
+    });
   });
-});
+
+  process.on('SIGINT', () => {
+    console.log('\nSIGINT received, shutting down gracefully...');
+    server.close(() => {
+      console.log('Server closed');
+      process.exit(0);
+    });
+  });
+})();
 
 // Handle uncaught errors
 process.on('uncaughtException', (error) => {
